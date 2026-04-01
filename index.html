@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>CoderOS | 专业青少年Linux编程环境 - 即插即学，离线竞赛系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --text-main: #0f172a;
+            --text-muted: #334155;
+            --text-light: #5b6e8c;
+            --color-blue: #3b82f6;
+            --color-indigo: #6366f1;
+            --color-red: #ef4444;
+            --color-orange: #f97316;
+            --color-green: #10b981;
+            --glass-white: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.9);
+            --card-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08);
+            --transition-smooth: all 0.7s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            --transition-delay-step: 0.12s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: #fefefe;
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* 动态彩色碰撞背景 (柔和版) */
+        .bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: linear-gradient(135deg, #fff9f0 0%, #f0f4ff 100%);
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.4;
+            animation: floatDrift 22s infinite alternate ease-in-out;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: #93c5fd;
+            top: -15%;
+            left: -10%;
+            animation-duration: 28s;
+        }
+
+        .orb-2 {
+            width: 550px;
+            height: 550px;
+            background: #fed7aa;
+            bottom: -20%;
+            right: -5%;
+            animation-duration: 24s;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 450px;
+            height: 450px;
+            background: #c4b5fd;
+            top: 40%;
+            right: 10%;
+            animation-duration: 30s;
+            animation-delay: -10s;
+        }
+
+        @keyframes floatDrift {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                transform: translate(120px, 80px) scale(1.2);
+            }
+        }
+
+        /* 导航栏 */
+        nav {
+            padding: 16px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+            transform: translateY(-100%);
+            animation: slideDownNav 0.8s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+        }
+
+        @keyframes slideDownNav {
+            0% { transform: translateY(-100%); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .logo i {
+            color: var(--color-blue);
+            margin-right: 6px;
+        }
+
+        .logo span {
+            color: var(--color-blue);
+        }
+
+        /* 滚动淡入效果增强 + 交错延迟 */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: var(--transition-smooth);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hero区域专属渐进动画 (不依赖滚动，进入即播，并带延迟序列) */
+        .hero-badge.reveal {
+            transition-delay: 0s;
+        }
+        .hero h1.reveal {
+            transition-delay: 0.1s;
+        }
+        .hero-desc.reveal {
+            transition-delay: 0.25s;
+        }
+        .hero .btn-primary.reveal {
+            transition-delay: 0.4s;
+        }
+
+        /* 全局容器 */
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        section {
+            padding: 80px 0;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e293b, var(--color-blue));
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .section-header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        /* 卡片网格 & 交错动画 (滚动时依次出现) */
+        .grid-2, .grid-3 {
+            display: grid;
+            gap: 32px;
+        }
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        }
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        }
+
+        /* 交错延迟：为每个卡片子项设置不同的 transition-delay (基于 :nth-child) */
+        .grid-2 .reveal:nth-child(1) { transition-delay: 0s; }
+        .grid-2 .reveal:nth-child(2) { transition-delay: 0.1s; }
+        .grid-2 .reveal:nth-child(3) { transition-delay: 0.2s; }
+        
+        .grid-3 .reveal:nth-child(1) { transition-delay: 0s; }
+        .grid-3 .reveal:nth-child(2) { transition-delay: 0.08s; }
+        .grid-3 .reveal:nth-child(3) { transition-delay: 0.16s; }
+        
+        /* 时间线卡片交错 */
+        .timeline .reveal {
+            transition-delay: calc(var(--order, 0) * 0.08s);
+        }
+        
+        .glass-card {
+            background: var(--glass-white);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 32px 28px;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 30px 45px -20px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(145deg, var(--color-blue), #818cf8);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: white;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            border-radius: 40px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 1rem;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--color-blue);
+            color: white;
+            box-shadow: 0 8px 18px rgba(59, 130, 246, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(59, 130, 246, 0.35);
+        }
+
+        /* hero区域 */
+        .hero {
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 100px 20px 60px;
+        }
+
+        .hero-badge {
+            background: rgba(59, 130, 246, 0.12);
+            display: inline-block;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-blue);
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.4rem, 8vw, 4.8rem);
+            font-weight: 900;
+            line-height: 1.2;
+            background: linear-gradient(to right, #0f172a, #2563eb, #f97316);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .hero-desc {
+            font-size: 1.2rem;
+            max-width: 780px;
+            margin: 0 auto 32px;
+            color: var(--text-muted);
+        }
+
+        /* 终端样式 (oj增强) */
+        .oj-wrapper {
+            background: #0f172a;
+            border-radius: 28px;
+            padding: 28px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            align-items: center;
+            margin: 40px 0;
+            box-shadow: 0 35px 60px -20px rgba(0, 0, 0, 0.3);
+        }
+
+        .oj-text {
+            flex: 1.2;
+            color: #e2e8f0;
+        }
+
+        .terminal-box {
+            background: #000000cc;
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            flex: 1;
+            border: 1px solid #334155;
+        }
+
+        /* 时间线简易样式 */
+        .timeline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .milestone {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 28px;
+            padding: 20px;
+            flex: 1;
+            min-width: 180px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transition: all 0.3s;
+        }
+        .milestone:hover {
+            transform: scale(1.02);
+            background: rgba(255,255,240,0.8);
+        }
+
+        .feedback-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        footer {
+            background: rgba(0, 0, 0, 0.02);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 50px 20px;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(12px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-card {
+            background: white;
+            max-width: 450px;
+            width: 90%;
+            border-radius: 32px;
+            padding: 32px 28px;
+            text-align: center;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.2);
+            animation: modalPop 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 780px) {
+            .glass-card {
+                padding: 24px;
+            }
+            section {
+                padding: 50px 0;
+            }
+        }
+
+        ul.check-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        ul.check-list li {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        ul.check-list li i {
+            color: var(--color-green);
+            font-size: 1.1rem;
+        }
+
+        /* 额外光效点缀 */
+        .glow-text {
+            text-shadow: 0 0 8px rgba(59,130,246,0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-canvas">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <nav>
+        <div class="logo">
+            <i class="fas fa-microchip"></i> Coder<span>OS</span>
+        </div>
+        <div style="font-weight: 500; font-size: 0.9rem;">
+            <i class="fas fa-code"></i> Vector-Ding
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Hero 区域，每个元素独立动画序列 -->
+        <div class="hero">
+            <div>
+                <div class="hero-badge reveal">
+                    <i class="fas fa-flask"></i> 2026 全新竞赛生态 · 离线即巅峰
+                </div>
+                <h1 class="reveal">即插即学的 Linux 开发环境<br>为 7~16 岁竞赛生而生</h1>
+                <p class="hero-desc reveal">
+                    基于 Lubuntu 24.04 LTS，内置 g++ 13.2.0、Code::Blocks、离线判题引擎 Project LemonLime，<br>
+                    预装 NOIP/CSP 真题 + 一本通 + USACO 千余题库。插上 U 盘，教室秒变机房。
+                </p>
+                <div class="reveal">
+                    <button class="btn btn-primary" onclick="openModal()"><i class="fas fa-download"></i> 申请内测资格</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 为什么选择 CoderOS + 双版本对比 (Junior / Pro) -->
+        <section>
+            <div class="section-header reveal">
+                <h2>为什么是 CoderOS？</h2>
+                <p>完全仿真 NOI Linux 竞赛环境，聚焦算法思维，摆脱环境配置烦恼</p>
+            </div>
+            <div class="grid-2">
+                <div class="glass-card reveal">
+                    <div class="icon-circle" style="background: linear-gradient(145deg, #3b82f6, #2563eb);">
+                        <i class="fas fa-flag-checkered"></i>
+                    </div>
+                    <h3 style="font-size: 1.7rem; margin-bottom: 12px;">Junior 竞赛版</h3>
+                    <p style="color: var(--text-muted);">CSP-J/S / NOIP 官方推荐级配置，开箱即战。</p>
+                    <ul class="check-list" style="margin-top: 20px;">
+                        <li><i class="fas fa-check-circle"></i> g++ 13.2.0 (C++14/17) + Code::Blocks 20.03</li>
+                        <li><i class="fas fa-check-circle"></i> 离线判题系统 (多测试点 / 文件 IO)</li>
+                        <li><i class="fas fa-check-circle"></i> 系统级只读保护 + 数据持久化</li>
+                        <li><i class="fas fa-check-circle"></i> 极简三入口：写代码 / 看资料 / 练习</li>
+                    </ul>
+                </div>
+                <div class="glass-card reveal">
+                    <div class="icon-circle" style="background: linear-gradient(145deg, #f97316, #ea580c);">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3 style="font-size: 1.7rem; margin-bottom: 12px;">Pro 开发者版</h3>
+                    <p style="color: var(--text-muted);">进阶全栈 · 未来扩展计划</p>
+                    <ul class="check-list" style="margin-top: 20px;">
+                        <li><i class="fas fa-check-circle"></i> Python / Java / Node.js 全套环境</li>
+                        <li><i class="fas fa-check-circle"></i> Docker 26.x 沙箱 + VS Code / IntelliJ</li>
+                        <li><i class="fas fa-check-circle"></i> Git 工作流 & 多语言支持</li>
+                        <li><i class="fas fa-check-circle"></i> 即将在 v2.0 发布，敬请期待</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 核心技术底座 (详细技术规格) -->
+        <section>
+            <div class="section-header reveal">
+                <h2>工业级技术底座</h2>
+                <p>基于 Ubuntu 24.04 LTS，完整兼容性 + 安全只读架构</p>
+            </div>
+            <div class="grid-3">
+                <div class="glass-card reveal">
+                    <i class="fas fa-tachometer-alt" style="font-size: 2rem; color: var(--color-blue); margin-bottom: 20px; display: block;"></i>
+                    <h4>系统核心</h4>
+                    <ul class="check-list">
+                        <li><i class="fas fa-angle-right"></i> Lubuntu 24.04 LTS (Noble)</li>
+                        <li><i class="fas fa-angle-right"></i> 内核 Linux 6.8 + LXQt 轻量桌面</li>
+                        <li><i class="fas fa-angle-right"></i> UEFI / Legacy 双模式启动</li>
+                        <li><i class="fas fa-angle-right"></i> casper-rw 持久化 + overlayroot</li>
+                    </ul>
+                </div>
+                <div class="glass-card reveal">
+                    <i class="fas fa-code-branch" style="font-size: 2rem; color: var(--color-orange); margin-bottom: 20px;"></i>
+                    <h4>编译工具链</h4>
+                    <ul class="check-list">
+                        <li><i class="fas fa-angle-right"></i> g++ 13.2.0 (完整 libstdc++)</li>
+                        <li><i class="fas fa-angle-right"></i> 默认 C++14 / 支持 C++17</li>
+                        <li><i class="fas fa-angle-right"></i> Code::Blocks 20.03 + Geany</li>
+                        <li><i class="fas fa-angle-right"></i> GDB 14.1 调试集成</li>
+                    </ul>
+                </div>
+                <div class="glass-card reveal">
+                    <i class="fas fa-shield-alt" style="font-size: 2rem; color: var(--color-green); margin-bottom: 20px;"></i>
+                    <h4>安全持久化</h4>
+                    <ul class="check-list">
+                        <li><i class="fas fa-angle-right"></i> 根文件系统 squashfs 只读</li>
+                        <li><i class="fas fa-angle-right"></i> 用户数据 ext4 独立分区</li>
+                        <li><i class="fas fa-angle-right"></i> OverlayFS 透明读写</li>
+                        <li><i class="fas fa-angle-right"></i> 防误删 / 一键重置</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 离线判题系统深度展示 + 资源库概览 -->
+        <section>
+            <div class="oj-wrapper reveal">
+                <div class="oj-text">
+                    <h2 style="color: white; font-size: 1.8rem;"><i class="fas fa-microchip"></i> 离线判题系统</h2>
+                    <p style="margin: 15px 0; opacity: 0.85;">基于 Project LemonLime 引擎，完美模拟 NOIP / CSP 复赛环境。无需网络，提交即评测。</p>
+                    <ul style="list-style: none; margin-top: 16px;">
+                        <li style="margin-bottom: 12px;"><i class="fas fa-check-circle" style="color: #4ade80;"></i> 支持传统题 / 交互题 / 通信题 / 提交答案题</li>
+                        <li style="margin-bottom: 12px;"><i class="fas fa-check-circle" style="color: #4ade80;"></i> 多测试点 + 子任务 + 时间/内存限制检测</li>
+                        <li><i class="fas fa-check-circle" style="color: #4ade80;"></i> 文件 IO (freopen) 自动评测，返回 AC/WA/TLE/MLE</li>
+                    </ul>
+                </div>
+                <div class="terminal-box">
+                    <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                        <div style="width: 12px; height: 12px; background: #ff5f56; border-radius: 50%;"></div>
+                        <div style="width: 12px; height: 12px; background: #ffbd2e; border-radius: 50%;"></div>
+                        <div style="width: 12px; height: 12px; background: #27c93f; border-radius: 50%;"></div>
+                        <span style="color: #94a3b8; margin-left: 12px;">CoderOS Judge v2.1</span>
+                    </div>
+                    <div style="color: #cbd5e6; font-family: monospace;">
+                        > 评测 CSP-J2022 真题 <br>
+                        > 编译 solution.cpp ... <span style="color: #4ade80;">成功</span><br>
+                        > Test 1: <span style="color: #4ade80;">Accepted</span> (0.23s, 9.2MB)<br>
+                        > Test 2: <span style="color: #4ade80;">Accepted</span> (0.45s, 9.5MB)<br>
+                        > Test 3: <span style="color: #f97316;">Time Limit Exceeded</span> (1.02s)<br>
+                        > 总分: <span style="background:#3b82f6; padding: 0 8px; border-radius: 20px;">66/100</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 海量本地化题库 + 资源亮点 -->
+        <section>
+            <div class="section-header reveal">
+                <h2>📚 海量本地化学习资源</h2>
+                <p>全离线题库 + 示范代码 + 难度分级，打造完整学习闭环</p>
+            </div>
+            <div class="grid-3">
+                <div class="glass-card reveal" style="text-align: center;">
+                    <i class="fas fa-database" style="font-size: 2.5rem; color: var(--color-blue); margin-bottom: 15px;"></i>
+                    <h4>竞赛真题库</h4>
+                    <p>NOIP/CSP 近20年复赛真题（约180+题），一本通系列（语法600题+算法220题），USACO 训练章节 120+ 题，蓝桥杯历届真题</p>
+                </div>
+                <div class="glass-card reveal" style="text-align: center;">
+                    <i class="fas fa-code" style="font-size: 2.5rem; color: var(--color-orange); margin-bottom: 15px;"></i>
+                    <h4>示范代码 & 题解</h4>
+                    <p>每道题配套 C++ 官方题解，含复杂度分析、易错点警示、优化思路，支持自主学习复盘。</p>
+                </div>
+                <div class="glass-card reveal" style="text-align: center;">
+                    <i class="fas fa-chart-line" style="font-size: 2.5rem; color: var(--color-green); margin-bottom: 15px;"></i>
+                    <h4>智能难度索引</h4>
+                    <p>入门 → 普及 → 提高 → 省选 → IOI 梯度分级，知识点标签（DP、图论、二分）双重筛选。</p>
+                </div>
+            </div>
+            <div class="reveal" style="background: rgba(59,130,246,0.05); border-radius: 2rem; padding: 28px; margin-top: 30px; text-align: center;">
+                <i class="fas fa-check-circle" style="color: var(--color-green);"></i> 全闭环学习：读题 → 本地 IDE 编码 → 离线判题验证 → 对照示范代码复盘，无网络依赖。
+            </div>
+        </section>
+
+        <!-- 三阶段测试规划 + 详细时间表 -->
+        <section>
+            <div class="section-header reveal">
+                <h2>🧪 精细化测试路线图</h2>
+                <p>6周递进式验证，确保稳定可靠</p>
+            </div>
+            <div class="grid-3">
+                <div class="glass-card reveal" style="border-left: 5px solid #ef4444;">
+                    <h3><i class="fas fa-vial"></i> Alpha 内部测试</h3>
+                    <p><strong>第1周</strong> · 开发者+核心同学3~5人</p>
+                    <p>启动兼容性、判题核心逻辑验证，修复严重 Bug，制作内测镜像。</p>
+                </div>
+                <div class="glass-card reveal" style="border-left: 5px solid #3b82f6;">
+                    <h3><i class="fas fa-users"></i> Closed Beta 封闭内测</h3>
+                    <p><strong>第2-3周</strong> · 10~20名竞赛初学者</p>
+                    <p>真实场景使用，收集体验反馈，快速迭代（每3-5天发布修复版）</p>
+                </div>
+                <div class="glass-card reveal" style="border-left: 5px solid #f97316;">
+                    <h3><i class="fas fa-globe"></i> Open Beta 开放公测</h3>
+                    <p><strong>第4-6周</strong> · 学校/社区大规模招募</p>
+                    <p>兼容性压力测试，最终优化，发布 v1.0 正式版镜像。</p>
+                </div>
+            </div>
+            <div class="timeline">
+                <div class="milestone reveal" style="--order:0"><i class="fas fa-calendar-week"></i> 第1周: Alpha镜像</div>
+                <div class="milestone reveal" style="--order:1"><i class="fas fa-usb"></i> 第2-3周: 封闭内测</div>
+                <div class="milestone reveal" style="--order:2"><i class="fas fa-chart-line"></i> 第4周: 公测准备</div>
+                <div class="milestone reveal" style="--order:3"><i class="fas fa-rocket"></i> 第5-6周: 公测+正式发布</div>
+            </div>
+        </section>
+
+        <!-- 反馈机制 + 预期成果/激励措施 -->
+        <section>
+            <div class="section-header reveal">
+                <h2>🔄 高效反馈 & 质量承诺</h2>
+                <p>让每个测试者都被倾听，打造可靠教育工具</p>
+            </div>
+            <div class="grid-2">
+                <div class="glass-card reveal">
+                    <i class="fas fa-comments" style="font-size: 2rem; margin-bottom: 12px; color: var(--color-blue);"></i>
+                    <h4>多渠道反馈闭环</h4>
+                    <p>微信群即时反馈 + 在线表单结构化收集，问题跟踪表（编号/等级/状态）公开透明，快速迭代。</p>
+                    <p style="margin-top: 15px;"><i class="fas fa-trophy"></i> <strong>激励措施</strong>：优秀测试员列入系统致谢页，颁发证书，内测贡献者永久荣誉。</p>
+                </div>
+                <div class="glass-card reveal">
+                    <i class="fas fa-chart-simple" style="font-size: 2rem; margin-bottom: 12px; color: var(--color-green);"></i>
+                    <h4>结束标准 & 交付</h4>
+                    <ul class="check-list">
+                        <li><i class="fas fa-check"></i> 致命问题修复率 100%</li>
+                        <li><i class="fas fa-check"></i> 严重问题修复率 ≥90%</li>
+                        <li><i class="fas fa-check"></i> 易用性负面反馈 &lt;10%</li>
+                        <li><i class="fas fa-check"></i> 核心测试清单全部通过</li>
+                    </ul>
+                    <p style="margin-top: 12px;">最终交付 <strong>CoderOS v1.0 正式版</strong>，供学校竞赛训练使用。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 后续计划 & 社区生态 -->
+        <section>
+            <div class="glass-card reveal" style="text-align: center; background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(249,115,22,0.05));">
+                <i class="fas fa-chalkboard-user" style="font-size: 2.5rem; color: var(--color-indigo);"></i>
+                <h3 style="margin: 16px 0;">未来蓝图 & 社区共建</h3>
+                <p style="max-width: 700px; margin: 0 auto;">Pro版将集成 Python/Java/Docker 生态，持续更新竞赛题库，搭建在线交流社区，让 CoderOS 成为青少年编程的基础设施。</p>
+                <div style="margin-top: 24px;">
+                    <span style="background: rgba(0,0,0,0.05); padding: 6px 20px; border-radius: 40px;"><i class="fab fa-github"></i> github.com/CoderOS-Project</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p><i class="fas fa-microchip"></i> CoderOS · 基于 Lubuntu 24.04 LTS (Noble Numbat) 深度定制</p>
+        <p style="font-size: 0.85rem; margin-top: 12px;">© 2026 CoderOS 项目组 | 让每个 U 盘成为孩子的编程起点</p>
+        <p style="font-size: 0.7rem;">Vector-Ding | 测试规划遵循 NOI Linux 标准</p>
+    </footer>
+
+    <!-- 内测弹窗 -->
+    <div id="betaModal" class="modal">
+        <div class="modal-card">
+            <i class="fas fa-qrcode" style="font-size: 2.2rem; color: #3b82f6;"></i>
+            <h3 style="margin: 15px 0;">🔓 获取 CoderOS 内测镜像</h3>
+            <p>关注 B站 / 微信公众号 <strong>@CoderOS官方</strong><br>回复关键词 <strong style="background:#f1f5f9; padding: 4px 12px; border-radius: 30px;">“CoderOS内测”</strong> 获取镜像下载链接及制作教程。</p>
+            <div style="background: #f8fafc; border-radius: 20px; padding: 20px; margin: 20px 0; border: 1px dashed #cbd5e1;">
+                <i class="fab fa-bilibili"></i> B站：CoderOS官方<br>
+                <i class="fab fa-weixin"></i> B站UID:3706938120473397
+            </div>
+            <button class="btn btn-primary" onclick="closeModal()" style="width: 100%;">我已关注，期待公测</button>
+            <p style="font-size: 0.7rem; margin-top: 16px;">*Alpha 版本仅限测试交流，正式版将于测试结束后发布</p>
+        </div>
+    </div>
+
+    <script>
+        // 滚动监听 + 交错动画 (滚动到视口时添加 active)
+        function checkReveal() {
+            const reveals = document.querySelectorAll('.reveal');
+            const windowHeight = window.innerHeight;
+            const revealThreshold = 100;
+            reveals.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < windowHeight - revealThreshold) {
+                    el.classList.add('active');
+                }
+            });
+        }
+
+        // 额外为时间线的每个milestone添加自定义延迟 (通过data-order已经处理css变量，但需要确保每个元素有对应属性)
+        function setTimelineOrder() {
+            const milestones = document.querySelectorAll('.timeline .milestone');
+            milestones.forEach((el, idx) => {
+                el.style.setProperty('--order', idx);
+            });
+        }
+
+        window.addEventListener('scroll', checkReveal);
+        window.addEventListener('resize', checkReveal);
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimelineOrder();
+            // 强制触发一次，让所有已显示元素立刻active
+            checkReveal();
+            // 确保hero区域元素全部激活 (它们已经在视口内)
+            const heroReveals = document.querySelectorAll('.hero .reveal');
+            heroReveals.forEach(el => el.classList.add('active'));
+        });
+
+        function openModal() {
+            document.getElementById('betaModal').style.display = 'flex';
+        }
+        function closeModal() {
+            document.getElementById('betaModal').style.display = 'none';
+        }
+        window.onclick = function(e) {
+            const modal = document.getElementById('betaModal');
+            if (e.target === modal) closeModal();
+        }
+    </script>
+</body>
+</html>
